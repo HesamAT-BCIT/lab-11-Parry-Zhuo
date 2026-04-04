@@ -15,6 +15,7 @@ from utils.validation import normalize_profile_data, require_json_content_type, 
 
 from . import api_bp
 
+import logging
 
 @api_bp.get("/profile")
 @require_jwt
@@ -117,19 +118,33 @@ def api_delete_profile(uid: str):
     return jsonify({"message": "Profile deleted successfully"}), 200
 
 
+logger = logging.getLogger(__name__)
+
 @api_bp.get("/sensor_data")
 @require_jwt
 def api_get_sensor_data(uid: str):
-    """Return mock sensor data for dashboard visualization."""
-    _ = uid
+    logger.info(
+        "Sensor data requested",
+        extra={
+            "user_id": uid,
+            "endpoint": "/api/sensor_data",
+            "method": request.method,
+        },
+    )
     data_file = Path(__file__).resolve().parents[2] / "mock_sensor_data.json"
 
     try:
         with data_file.open("r", encoding="utf-8") as f:
             data = json.load(f)
+
+        logger.info("Sensor data loaded successfully")
+
     except FileNotFoundError:
+        logger.error("mock_sensor_data.json not found")
         return jsonify({"error": "mock_sensor_data.json not found"}), 404
+
     except json.JSONDecodeError:
+        logger.error("Invalid JSON in mock_sensor_data.json")
         return jsonify({"error": "mock_sensor_data.json is not valid JSON"}), 500
 
     return jsonify(data), 200
